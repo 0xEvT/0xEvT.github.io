@@ -176,7 +176,8 @@ $IQk7wwSnJtYui4SonB = MXVn2GqrFSCSZqSi8 ("...kernel32.dll...") ("...OpenProcess.
         <div class="step">&nbsp;│&nbsp;&nbsp;&nbsp;└─ cvtres.exe</div>
         <div class="step">&nbsp;└─ slui.exe -Embedding</div>
       </div>
-      <p>Good &mdash; that lines up exactly with the <code>Add-Type</code> block found in static analysis. But then the malware's own native capabilities never got a chance to run: the WinAPI resolver crashed on its very first call, and the failure cascaded through everything downstream of it &mdash; <code>CreateWindowEx</code>, <code>ShowWindow</code>, <code>DestroyWindow</code>, and almost certainly the memory-patch chain too, since it leans on the same resolver.</p>
+      <p>Good &mdash; that lines up exactly with the <code>Add-Type</code> block found in static analysis. I pulled the compiled <code>a04muimf.dll</code> open in <strong>dnSpy</strong> to decompile it back to C# &mdash; worth doing any time <code>Add-Type</code> shows up, since it's a two-minute way to confirm a static read instead of just trusting your own manual deobfuscation. It matched, byte for byte: the <code>W32API</code> class, <code>EnumWindows</code>, <code>FindPattern</code>, nothing extra hiding inside.</p>
+      <p>But then the malware's own native capabilities never got a chance to run: the WinAPI resolver crashed on its very first call, and the failure cascaded through everything downstream of it &mdash; <code>CreateWindowEx</code>, <code>ShowWindow</code>, <code>DestroyWindow</code>, and almost certainly the memory-patch chain too, since it leans on the same resolver.</p>
       <p>Two competing explanations, and I want to be honest that I didn't fully resolve which one was right: an honest bug &mdash; reflection-based P/Invoke via raw function pointers is fragile, and a 32-bit/64-bit pointer-size mismatch is a classic way to make it fall over &mdash; or an anti-sandbox side effect, where a fallback code path taken once the malware suspects it's being watched turns out to be the less-tested one. The errors looked like plain, uncaught .NET exceptions, which leans toward "bug" &mdash; a well-built evasion mechanism usually fails <em>silently</em>. But I wasn't ready to close the book on it, because&hellip;</p>
 
       <h3>Run #2: VirusTotal's sandbox fills in the picture</h3>
@@ -190,7 +191,7 @@ Window title check: "Administrator: c:/windows/.../powershell.exe"</code></pre>
       <p>That finding retroactively made the Run #1 crash more interesting: it wasn't proof of anti-sandbox behavior, but it made the theory <em>more</em> plausible than it had been an hour earlier.</p>
 
       <h3>Run #3: my own VM, and finally &mdash; it just works</h3>
-      <p>Third time, on my own local VirtualBox VM, network isolated to host-only, running under a non-elevated console. This run didn't crash.</p>
+      <p>Third time, on my own local VirtualBox VM, network isolated to host-only, running under a non-elevated console &mdash; Sysinternals' Procmon and Process Explorer watching the process tree, and <strong>FakeNet-NG</strong> standing in for the internet so anything the malware tried to reach would resolve to a fake address instead of just timing out silently. This run didn't crash.</p>
       <div class="code-block">
         <div class="tag">shell</div>
         <pre><code>curl.exe 127.0.0.1:58172/       &rarr; {"error":"Unknown route","success":false}</code></pre>
@@ -207,6 +208,7 @@ Window title check: "Administrator: c:/windows/.../powershell.exe"</code></pre>
         </table>
       </div>
       <p>Three independent data points, same correlation each time. Not proof, but a pattern too clean to ignore.</p>
+      <p>With FakeNet-NG faking DNS, I filtered the capture in <strong>Wireshark</strong> and watched a handful of lookups go by &mdash; <code>ctldl.windowsupdate.com</code>, <code>config.edge.skype.com</code>, <code>self.events.data.microsoft.com</code> &mdash; all routine Windows background noise, all resolved to FakeNet-NG's placeholder address, and not one followed by an actual TLS handshake. Combined with the identical null result from ANY.RUN and VirusTotal's sandbox, that's <span class="hl">three independent environments agreeing: nothing in this file talks to the outside world on its own</span>.</p>
 
       <h3>A brief, frustrating detour with API Monitor</h3>
       <p>I wanted call-level visibility into the WinAPI resolver, so I reached for API Monitor. Two attempts, two failures &mdash; and neither one was the malware's fault. The first run used the wrong architecture build entirely (32-bit monitor against a 64-bit process). The second, correctly matched to 64-bit, still died &mdash; but this time inside the plain .NET/CLR bootstrap, <em>before</em> the obfuscated script even started executing. Manual API-hooking tools and managed .NET code apparently don't get along. Lesson filed away, tool retired for this sample.</p>
