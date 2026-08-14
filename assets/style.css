@@ -277,20 +277,33 @@ a:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--accent-hover);
 @media (prefers-reduced-motion: reduce){ #progress{transition:none;} html{scroll-behavior:auto;} }
 
 /* ---- portfolio one-pager ---- */
-.hero{padding:44px 0 12px;}
-.hero .kicker{
-  font-family:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
-  font-size:12.5px; letter-spacing:.12em; text-transform:uppercase;
-  color:var(--accent-warn); margin:0 0 14px;
+.hero{padding:40px 0 12px;}
+.hero-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:18px;
+  padding:40px 44px; box-shadow:0 10px 30px var(--shadow);
 }
-.hero h1{
+.hero-badge{
+  display:inline-block; padding:7px 16px; border-radius:20px;
+  background:var(--surface-2); border:1px solid var(--border);
+  font-family:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+  font-size:12.5px; letter-spacing:.06em; font-weight:700; color:var(--ink);
+  margin-bottom:22px;
+}
+.hero-card h1{
   font-family:ui-serif,"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
-  font-size:clamp(1.9rem,4.2vw,2.6rem);
-  line-height:1.15; margin:0 0 16px; text-wrap:balance; letter-spacing:-.01em;
+  font-size:clamp(1.7rem,3.6vw,2.35rem);
+  line-height:1.2; margin:0 0 16px; text-wrap:balance; letter-spacing:-.01em;
   color:var(--accent-heading);
 }
-.hero p{color:var(--ink-muted); max-width:82ch; margin:0 0 12px;}
-.hero .toolline{font-size:14.5px; color:var(--ink-muted); margin:0 0 40px;}
+.hero-card p.lede{color:var(--ink-muted); font-size:16px; max-width:80ch; margin:0 0 26px;}
+.tool-pills{display:flex; flex-wrap:wrap; gap:12px;}
+.tool-pill{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:9px 16px; border-radius:20px;
+  background:var(--surface-2); border:1px solid var(--border);
+  font-size:13.5px; color:var(--ink-muted);
+}
+.tool-pill b{color:var(--accent-confirm); font-weight:700;}
 .hero .toolline b{color:var(--ink); font-weight:600;}
 .hero .toolline .sep{margin:0 10px; color:var(--border);}
 
