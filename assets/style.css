@@ -12,6 +12,7 @@
   --accent-confirm:#2A7873;
   --accent-confirm-bg:#DBEEEC;
   --accent-heading:#5C8A00;
+  --accent-hover:#0091C2;
   --code-bg:#161A21;
   --code-ink:#E7ECF2;
   --code-muted:#8B95A3;
@@ -31,6 +32,7 @@
     --accent-confirm:#5FBDB6;
     --accent-confirm-bg:rgba(95,189,182,0.14);
     --accent-heading:#B4FA2E;
+    --accent-hover:#2FF0FF;
     --code-bg:#0C0F14;
     --code-ink:#D7DEE7;
     --code-muted:#6E7A89;
@@ -50,6 +52,7 @@
   --accent-confirm:#5FBDB6;
   --accent-confirm-bg:rgba(95,189,182,0.14);
   --accent-heading:#B4FA2E;
+  --accent-hover:#2FF0FF;
   --code-bg:#0C0F14;
   --code-ink:#D7DEE7;
   --code-muted:#6E7A89;
@@ -85,7 +88,7 @@ body{
 .site-nav a{
   color:var(--ink-muted); text-decoration:none; font-size:14.5px; margin-left:22px;
 }
-.site-nav a:hover, .site-nav a:focus-visible{color:var(--link);}
+.site-nav a:hover, .site-nav a:focus-visible{color:var(--accent-hover);}
 
 .site-footer{
   border-top:1px solid var(--border);
@@ -123,7 +126,7 @@ body{
   font-family:ui-serif,"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
   font-size:1.4rem; margin:0 0 8px; text-wrap:balance;
 }
-.post-card:hover h2, .post-card:focus-visible h2{color:var(--link);}
+.post-card:hover h2, .post-card:focus-visible h2{color:var(--accent-hover);}
 .post-card p{color:var(--ink-muted); margin:0; max-width:84ch;}
 .post-card .tags{margin-top:10px;}
 .post-card .tag{
@@ -169,7 +172,7 @@ nav.toc .label{
 nav.toc ol{margin:0; padding:0 0 0 1.15em; columns:2; column-gap:28px; font-size:14.5px;}
 nav.toc li{margin-bottom:7px; break-inside:avoid;}
 nav.toc a{color:var(--ink); text-decoration:none; border-bottom:1px solid transparent;}
-nav.toc a:hover, nav.toc a:focus-visible{border-bottom-color:var(--link); color:var(--link);}
+nav.toc a:hover, nav.toc a:focus-visible{border-bottom-color:var(--accent-hover); color:var(--accent-hover);}
 
 main section{margin-bottom:56px;}
 h2{
@@ -256,7 +259,7 @@ article footer{border-top:1px solid var(--border); margin-top:60px; padding-top:
 article footer a{color:var(--link);}
 
 ::selection{background:var(--accent-confirm-bg); color:var(--ink);}
-a:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--accent-confirm); outline-offset:2px;}
+a:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--accent-hover); outline-offset:2px;}
 
 #progress{
   position:fixed; top:0; left:0; height:3px; width:0%;
