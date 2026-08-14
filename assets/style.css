@@ -92,7 +92,7 @@ body{
 }
 .brand span{color:var(--accent-heading);}
 .site-nav a{
-  color:var(--ink-muted); text-decoration:none; font-size:14.5px; margin-left:22px;
+  color:var(--ink-muted); text-decoration:none; font-size:17px; margin-left:26px;
 }
 .site-nav a:hover, .site-nav a:focus-visible{color:var(--accent-hover);}
 
@@ -295,7 +295,9 @@ a:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--accent-hover);
 .hero .toolline .sep{margin:0 10px; color:var(--border);}
 
 .sticky-nav{
-  position:sticky; top:0; z-index:40; background:var(--bg);
+  position:sticky; top:0; z-index:40;
+  background:color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border); margin-bottom:8px;
 }
 .sticky-nav .site-header.wrap{padding:20px 24px; border-bottom:none; margin-bottom:0;}
