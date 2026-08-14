@@ -182,7 +182,7 @@ nav.toc li{margin-bottom:11px; break-inside:avoid;}
 nav.toc a{color:var(--ink); text-decoration:none; border-bottom:1px solid transparent;}
 nav.toc a:hover, nav.toc a:focus-visible{border-bottom-color:var(--accent-hover); color:var(--accent-hover);}
 
-main section{margin-bottom:56px;}
+.wrap section{margin-bottom:64px;}
 h2{
   font-family:ui-serif,"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
   font-size:1.7rem; margin:0 0 20px;
