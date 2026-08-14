@@ -370,16 +370,9 @@ a:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--accent-hover);
 /* Experience */
 .job-list{display:flex; flex-direction:column; gap:20px; margin:0 0 24px;}
 .job-entry{
-  background:var(--surface);
-  border:1px solid color-mix(in srgb, var(--accent-heading) 35%, var(--border));
-  border-radius:12px; padding:24px 26px;
-  box-shadow:0 4px 16px var(--shadow);
-  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
-}
-.job-entry:hover{
-  transform:translateY(-3px);
-  border-color:color-mix(in srgb, var(--accent-heading) 50%, var(--border));
-  box-shadow:0 10px 28px var(--shadow);
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:18px; padding:28px 32px;
+  box-shadow:0 10px 30px var(--shadow);
 }
 .job-entry .job-title{font-weight:700; font-size:18px; display:block; margin-bottom:4px;}
 .job-entry .job-meta-line{
