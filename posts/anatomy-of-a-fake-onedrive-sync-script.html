@@ -69,7 +69,7 @@
         <pre><code>Get-FileHash -Algorithm SHA256 .\onedrive-sync.ps1 | Format-List
 Get-FileHash -Algorithm MD5    .\onedrive-sync.ps1 | Format-List</code></pre>
       </div>
-      <p>SHA256 came back <code>8ff85f1b...</code>, and &mdash; first surprise &mdash; VirusTotal had never seen it before. First Submission was <em>today</em>. That alone tells you something: either this is a genuinely brand-new tool, or, far more common these days, it's a <strong>per-victim build</strong> &mdash; a loader that gets recompiled fresh for every target so the hash never repeats and hash-based detection never gets a chance to catch up.</p>
+      <p>SHA256 came back <code>8ff85f1b...</code>, and &mdash; first surprise &mdash; VirusTotal had never seen it before. First Submission was <em>today</em>. That alone tells you something: either this is a genuinely brand-new tool, or, far more common these days, it's a <span class="hl">per-victim build</span> &mdash; a loader that gets recompiled fresh for every target so the hash never repeats and hash-based detection never gets a chance to catch up.</p>
       <p>The file size backed that up. A OneDrive sync helper does not need 316&nbsp;KB. Something is embedded in there.</p>
       <p>VirusTotal's verdict was underwhelming on paper: <strong>12 out of 75 engines</strong>, and the ones that did flag it weren't exactly confident about it:</p>
       <div class="table-wrap">
@@ -151,7 +151,7 @@ $IQk7wwSnJtYui4SonB = MXVn2GqrFSCSZqSi8 ("...kernel32.dll...") ("...OpenProcess.
         <pre><code>$Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type")</code></pre>
       </div>
       <p>CORS headers only matter to a browser enforcing cross-origin rules against JavaScript running on an actual web page. That's the tell: something running inside a browser tab is calling <code>fetch()</code> against <code>127.0.0.1:58172</code>. And that only makes sense if there's a browser extension &mdash; a content script &mdash; that this <code>.ps1</code> file was built to talk to.</p>
-      <p>Suddenly the whole shape of the file made sense. <code>onedrive-sync.ps1</code> isn't the malware. It's <strong>half</strong> of the malware &mdash; the native backend of a toolkit whose other half, a browser extension, was never recovered. The extension reads session data straight out of an open tab (very plausibly <code>web.telegram.org</code>, given what actually happened to my friend) and hands it to this local server, which &mdash; theory, at this point &mdash; relays it onward. A stolen web session explains the 2FA bypass perfectly: you don't need the password or the second factor if you just take the already-authenticated session.</p>
+      <p>Suddenly the whole shape of the file made sense. <code>onedrive-sync.ps1</code> isn't the malware. <span class="hl">It's half of the malware</span> &mdash; the native backend of a toolkit whose other half, a browser extension, was never recovered. The extension reads session data straight out of an open tab (very plausibly <code>web.telegram.org</code>, given what actually happened to my friend) and hands it to this local server, which &mdash; theory, at this point &mdash; relays it onward. A stolen web session explains the 2FA bypass perfectly: you don't need the password or the second factor if you just take the already-authenticated session.</p>
       <p>One more piece confirmed the "half a toolkit" read directly: the file also uses <code>Add-Type</code> to compile a small C# helper on the fly:</p>
       <div class="code-block">
         <div class="tag">csharp</div>
@@ -259,9 +259,9 @@ MXVn2GqrFSCSZqSi8 kernel32.dll CloseHandle</code></pre>
       <div class="verdict-box">
         <span class="tag">Verdict</span>
         <p>Strip away the obfuscation layers and the sandbox drama, and here's what <code>onedrive-sync.ps1</code> actually is: a <strong>modular PowerShell trojan / local IPC agent</strong>. Not a downloader &mdash; no downloader cmdlets anywhere in the file, no outbound C2 traffic in three independent execution environments. It's the native backend half of a two-part toolkit.</p>
-        <p>Start to finish, it: disguises itself as a OneDrive helper and checks a disguised mutex to avoid running twice; actively checks for a debugger, a sandboxed environment, and elevated/admin context before doing anything risky; resolves every Win32 API it needs at runtime through raw function pointers, specifically to avoid leaving a static import table for scanners to catch; compiles a small native helper on the fly for window enumeration and memory-pattern scanning; runs a CORS-enabled local HTTP server as a bridge to a browser extension that was never recovered; and, once it has a target process ID, opens the process and both reads <em>and writes</em> its memory. A complete remote memory-patch capability, most plausibly aimed at patching <code>amsi.dll</code> in a browser process, confirmed loaded in the target.</p>
+        <p>Start to finish, it: disguises itself as a OneDrive helper and checks a disguised mutex to avoid running twice; actively checks for a debugger, a sandboxed environment, and elevated/admin context before doing anything risky; resolves every Win32 API it needs at runtime through raw function pointers, specifically to avoid leaving a static import table for scanners to catch; compiles a small native helper on the fly for window enumeration and memory-pattern scanning; runs a CORS-enabled local HTTP server as a bridge to a browser extension that was never recovered; and, once it has a target process ID, opens the process and both reads <em>and writes</em> its memory. <span class="hl">A complete remote memory-patch capability</span>, most plausibly aimed at patching <code>amsi.dll</code> in a browser process, confirmed loaded in the target.</p>
       </div>
-      <p>My friend's actual, confirmed impact &mdash; Telegram access stolen straight through a valid, already-authenticated session, no password or 2FA needed &mdash; is exactly the outcome this architecture is built to produce.</p>
+      <p>My friend's actual, confirmed impact &mdash; <span class="hl">Telegram access stolen straight through a valid, already-authenticated session, no password or 2FA needed</span> &mdash; is exactly the outcome this architecture is built to produce.</p>
       <p>And the VT Graph pivot means this isn't a one-off. It's one build in a toolkit that's been actively maintained and reused across different campaigns for months, with AV detection slowly catching up behind it the whole time.</p>
     </section>
 
@@ -304,7 +304,7 @@ MXVn2GqrFSCSZqSi8 kernel32.dll CloseHandle</code></pre>
 
     <section id="recs">
       <h2>Recommendations</h2>
-      <p>For my friend, the advice was blunt: treat the machine as fully compromised, not just infected. This sample can write into another process's memory &mdash; a targeted file cleanup isn't trustworthy against that capability class.</p>
+      <p>For my friend, the advice was blunt: <span class="hl">treat the machine as fully compromised, not just infected</span>. This sample can write into another process's memory &mdash; a targeted file cleanup isn't trustworthy against that capability class.</p>
       <ul>
         <li>Full OS reinstall &mdash; not just deleting the file.</li>
         <li>Kill every active Telegram session from a clean device, then change the password.</li>
