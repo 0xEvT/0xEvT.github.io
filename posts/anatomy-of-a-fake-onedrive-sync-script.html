@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anatomy of a Fake OneDrive Sync Script — 0xEvT</title>
+<meta name="description" content="How a 316 KB file called onedrive-sync.ps1 turned out to be half of a working credential-theft toolkit — and how a friend's stolen Telegram account led straight to it.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%A0%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+
+<div id="progress"></div>
+
+<div class="wrap">
+
+  <header class="site-header">
+    <a class="brand" href="/">0x<span>EvT</span></a>
+    <nav class="site-nav">
+      <a href="/">Posts</a>
+      <a href="https://github.com/0xEvT" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <header class="hero">
+    <p class="kicker">Field notes &middot; DFIR case file</p>
+    <h1>Anatomy of a Fake OneDrive Sync Script</h1>
+    <p class="dek">How a 316&nbsp;KB file called <code>onedrive-sync.ps1</code> turned out to be half of a working credential-theft toolkit &mdash; and how a friend's stolen Telegram account led straight to it.</p>
+    <div class="dossier">
+      <div><span class="label">Sample</span><span class="value mono">onedrive-sync.ps1</span></div>
+      <div><span class="label">Verdict</span><span class="value">Modular PS trojan</span></div>
+      <div><span class="label">Severity</span><span class="pill high">HIGH</span></div>
+      <div><span class="label">Campaign</span><span class="pill confirmed">ACTIVE, APR&ndash;JUL 2026</span></div>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Table of contents">
+    <p class="label">On this page</p>
+    <ol>
+      <li><a href="#intro">Introduction</a></li>
+      <li><a href="#first-contact">First contact</a></li>
+      <li><a href="#obfuscation">Cracking open the obfuscation</a></li>
+      <li><a href="#dynamic">Letting it run</a></li>
+      <li><a href="#not-alone">Not a loner</a></li>
+      <li><a href="#verdict">Putting it together</a></li>
+      <li><a href="#iocs">The IOC list</a></li>
+      <li><a href="#mitre">MITRE ATT&amp;CK</a></li>
+      <li><a href="#lessons">What I'd do differently</a></li>
+      <li><a href="#recs">Recommendations</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <section id="intro">
+      <p>A friend of mine got his Telegram account taken over. Cloud password, 2FA, all of it &mdash; didn't matter. A few days earlier he'd installed some browser extensions he probably shouldn't have. His PC was already offline by the time I got involved, but he'd pulled a file off it first: <code>onedrive-sync.ps1</code>, sitting quietly next to his real OneDrive sync folder, 316&nbsp;KB of PowerShell that had no business being that large.</p>
+      <p>This is the story of pulling that file apart &mdash; from a first hash lookup to a fully reconstructed attack chain, and eventually to discovering it wasn't even a one-off, but one build in a campaign that had been running for months.</p>
+      <div class="note">
+        <span class="tag">Note</span>
+        <p>Everything below happened in an isolated, network-cut VM with a snapshot before every execution. If you're following along with your own sample, don't skip that part &mdash; the file turned out to have a working remote-memory-patch capability, and you do not want to find that out the hard way on your host machine.</p>
+      </div>
+    </section>
+
+    <section id="first-contact">
+      <h2>First contact: what are we even looking at?</h2>
+      <p>Rule one with an unknown script: you hash it before you open it, and you never double-click it.</p>
+      <div class="code-block">
+        <div class="tag">powershell</div>
+        <pre><code>Get-FileHash -Algorithm SHA256 .\onedrive-sync.ps1 | Format-List
+Get-FileHash -Algorithm MD5    .\onedrive-sync.ps1 | Format-List</code></pre>
+      </div>
+      <p>SHA256 came back <code>8ff85f1b...</code>, and &mdash; first surprise &mdash; VirusTotal had never seen it before. First Submission was <em>today</em>. That alone tells you something: either this is a genuinely brand-new tool, or, far more common these days, it's a <strong>per-victim build</strong> &mdash; a loader that gets recompiled fresh for every target so the hash never repeats and hash-based detection never gets a chance to catch up.</p>
+      <p>The file size backed that up. A OneDrive sync helper does not need 316&nbsp;KB. Something is embedded in there.</p>
+      <p>VirusTotal's verdict was underwhelming on paper: <strong>12 out of 75 engines</strong>, and the ones that did flag it weren't exactly confident about it:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Vendor</th><th>Verdict</th></tr></thead>
+          <tbody>
+            <tr><td>Arcabit, BitDefender, eScan, Emsisoft, GData, VIPRE</td><td class="mono">CMD:Heur.BZC.PZQ.Pantera.332.5AD52FA3</td></tr>
+            <tr><td>ESET-NOD32 / Fortinet</td><td class="mono">PowerShell/Agent.EKY(!tr)</td></tr>
+            <tr><td>Varist</td><td class="mono">PSH/Agent.AMW</td></tr>
+            <tr><td>CTX</td><td class="mono">Powershell.unknown.pantera</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Worth noticing: the six "Pantera" hits aren't six independent detections &mdash; they're all licensees of the same Bitdefender engine, so that's really <em>one</em> heuristic firing six times under different logos. And the vendors with proper behavioral/cloud engines &mdash; Kaspersky, Defender, Sophos, CrowdStrike &mdash; said nothing at all. Not because the file is clean, but because VirusTotal's static scan can't see what only shows up at runtime. That gap is exactly where this investigation had to go next.</p>
+    </section>
+
+    <section id="obfuscation">
+      <h2>Cracking open the obfuscation</h2>
+      <p>Static analysis rule: read it, don't run it. I did this from Linux specifically, so there was no risk of a stray double-click executing anything.</p>
+      <div class="code-block">
+        <div class="tag">bash</div>
+        <pre><code>wc -l onedrive-sync.ps1   # 1859 lines &mdash; not one giant blob, mostly normal-length lines
+head -c 500 onedrive-sync.ps1</code></pre>
+      </div>
+      <p>The first 500 characters were already a taste of what I was in for:</p>
+      <div class="code-block">
+        <div class="tag">powershell</div>
+        <pre><code>$zVs3iOtGYUuxUaeLH = ("ApLBPHXOa8DLGlobal\explorIUJaegn5rJ71EnheuK0rUWVIuB4CHiw7WUwq5S7ZQTFClskwWnE9z5QwbQ"
+  .TrimEnd("ZQTFClskwWnE9z5QwbQ")
+  .TrimEnd("uK0rUWVIuB4CHiw7WUwq5S7")
+  .Replace("IUJaegn5rJ71En", "er_wiW4YdodVUKKc2BL_thumbcac")
+  .Replace((...-split "XkkcDnBUqDkXF")[(9010+1062)/8-2101-2325+3170], "de")
+  .TrimStart("ApLBPHXOa8DL"));</code></pre>
+      </div>
+      <p>Peel that apart by hand and you get <code>Global\explorer_wide_thumbcache</code> &mdash; a mutex name deliberately styled to look like a legitimate Windows Explorer/thumbnail-cache component. Its only job: make sure only one copy of this thing runs at a time, while blending in if someone's poking around in Process Explorer.</p>
+      <p>That single line was already a catalog of the obfuscation techniques running through the whole file:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Technique</th><th>What it buys the author</th></tr></thead>
+          <tbody>
+            <tr><td>Junk separators + <code>-split</code> + arithmetic indexing</td><td>hides which string gets picked from an array</td></tr>
+            <tr><td><code>TrimStart</code>/<code>TrimEnd</code> on a character set, not an exact substring</td><td>strips junk wrappers around the real string</td></tr>
+            <tr><td>Chained <code>.Replace()</code> calls</td><td>builds the final string incrementally</td></tr>
+            <tr><td>Randomized variable names</td><td>defeats human pattern-matching</td></tr>
+            <tr><td>Giant <code>if/elseif</code> chains, meaningless arithmetic conditions</td><td>opaque predicates &mdash; dead code that costs the analyst time, not logic</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>The DllImport that wasn't there</h3>
+      <p>Naturally, the first thing I grepped for was <code>DllImport</code> &mdash; the standard way PowerShell imports Win32 API functions. Zero hits. Tempting to conclude "no WinAPI usage here." Wrong conclusion.</p>
+      <div class="code-block">
+        <div class="tag">powershell</div>
+        <pre><code>$eSM0Ep3Ihjsg = oYMwF6bIdGrGV7Wsrq46 @([IntPtr]) ([bool])
+$jYAlIJHGVQraKgxcwdaSK = MXVn2GqrFSCSZqSi8 ("...kernel32...") ("...CloseHandle...")
+$fOjy80wmLc = [System.Runtime.InteropServices.Marshal]::$Km0HsrznVd($jYAlIJHGVQraKgxcwdaSK, $eSM0Ep3Ihjsg)</code></pre>
+      </div>
+      <p>That's <code>GetProcAddress</code> + <code>Marshal.GetDelegateForFunctionPointer</code> &mdash; resolving Win32 functions through a raw function pointer at runtime instead of declaring them up front. Why bother? Because <code>DllImport</code> leaves a literal string in the binary that a signature scanner, a YARA rule, or a plain <code>strings</code> pass can catch. Do it via reflection instead, and there's no static import table to flag &mdash; which incidentally explains exactly why the big AV vendors stayed silent on the static scan above.</p>
+
+      <h3>Plot twist: my own grep lied to me</h3>
+      <p>With that pattern confirmed, I ran a broader sweep for the classic process-injection API family: <code>OpenProcess</code>, <code>ReadProcessMemory</code>, <code>WriteProcessMemory</code>, <code>CreateRemoteThread</code>, <code>NtCreateThreadEx</code>. All five: <strong>nothing.</strong> So I wrote down a working conclusion &mdash; no process injection here, this is probably self-patching only (<code>FindPattern</code> + <code>VirtualProtect</code>, likely an AMSI bypass) &mdash; and moved on.</p>
+      <p>It was wrong, and the reason it was wrong is worth remembering for any obfuscated sample: the obfuscator doesn't just scramble names, it <strong>splits them down the middle</strong>. <code>"Open"</code> and <code>"Process"</code> get built as two separate string fragments and concatenated only at runtime. An exact grep for <code>"OpenProcess"</code> will never match, no matter how carefully you write the regex, because that literal substring never exists anywhere in the file at once.</p>
+      <p>Once I grepped for the <em>halves</em> instead:</p>
+      <div class="code-block">
+        <div class="tag">powershell</div>
+        <pre><code>$rU7MFdOByrkHA9DYzz = MXVn2GqrFSCSZqSi8 ("...kernel32.dll...") ("...ProcessMemory...")
+$IQk7wwSnJtYui4SonB = MXVn2GqrFSCSZqSi8 ("...kernel32.dll...") ("...OpenProcess...")</code></pre>
+      </div>
+      <p>There it was. <code>OpenProcess</code>, and a function with the classic <code>(IntPtr, IntPtr, byte[], Int32, ref UInt32) &rarr; Bool</code> signature &mdash; which, annoyingly, is nearly identical for both <code>ReadProcessMemory</code> and <code>WriteProcessMemory</code>, so at this point I genuinely couldn't tell which one it was from the signature alone.</p>
+      <div class="callout">
+        <span class="tag">Correction</span>
+        <p>With this kind of obfuscation, an exact-string grep returning zero hits is not evidence of absence. Only positive hits are trustworthy. I'd find out later &mdash; see the Script Tracer breakthrough below &mdash; that both functions were actually present.</p>
+      </div>
+
+      <h3>A server nobody asked for</h3>
+      <p>Then came the finding that reframed the whole file. Buried in the code, a <code>System.Net.HttpListener</code> bound to <code>http://127.0.0.1:58172/</code>. Not a downloader. Not an outbound C2 beacon. A <strong>local HTTP server</strong>, bound to localhost only, with CORS headers configured on the response:</p>
+      <div class="code-block">
+        <div class="tag">powershell</div>
+        <pre><code>$Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type")</code></pre>
+      </div>
+      <p>CORS headers only matter to a browser enforcing cross-origin rules against JavaScript running on an actual web page. That's the tell: something running inside a browser tab is calling <code>fetch()</code> against <code>127.0.0.1:58172</code>. And that only makes sense if there's a browser extension &mdash; a content script &mdash; that this <code>.ps1</code> file was built to talk to.</p>
+      <p>Suddenly the whole shape of the file made sense. <code>onedrive-sync.ps1</code> isn't the malware. It's <strong>half</strong> of the malware &mdash; the native backend of a toolkit whose other half, a browser extension, was never recovered. The extension reads session data straight out of an open tab (very plausibly <code>web.telegram.org</code>, given what actually happened to my friend) and hands it to this local server, which &mdash; theory, at this point &mdash; relays it onward. A stolen web session explains the 2FA bypass perfectly: you don't need the password or the second factor if you just take the already-authenticated session.</p>
+      <p>One more piece confirmed the "half a toolkit" read directly: the file also uses <code>Add-Type</code> to compile a small C# helper on the fly:</p>
+      <div class="code-block">
+        <div class="tag">csharp</div>
+        <pre><code>public class W32API {
+    [DllImport("user32.dll")]
+    public static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+    public static List&lt;int&gt; FindPattern(byte[] data, byte[] pattern, bool[] mask, int patternLength) { ... }
+}</code></pre>
+      </div>
+      <p><code>EnumWindows</code> to find a target window, <code>FindPattern</code> to scan for a byte signature inside a process's memory. Two tools that only make sense once you already have a target &mdash; and the only place a target PID could come from was that same local HTTP endpoint. Backend and extension, waiting on each other.</p>
+    </section>
+
+    <section id="dynamic">
+      <h2>Letting it run</h2>
+      <p>Static analysis gets you a long way, but at some point you have to actually flip the switch &mdash; carefully, in a disposable VM, with logging on before the first keystroke.</p>
+
+      <h3>Run #1: ANY.RUN, and a crash</h3>
+      <p>The process tree confirmed the C# compilation was real, not just theoretical:</p>
+      <div class="chaintrace">
+        <div class="step">powershell.exe -ep bypass onedrive-sync.ps1</div>
+        <div class="step">&nbsp;├─ csc.exe /noconfig /fullpaths @a04muimf.cmdline <span class="arrow">&larr; compiling our W32API class</span></div>
+        <div class="step">&nbsp;│&nbsp;&nbsp;&nbsp;└─ cvtres.exe</div>
+        <div class="step">&nbsp;└─ slui.exe -Embedding</div>
+      </div>
+      <p>Good &mdash; that lines up exactly with the <code>Add-Type</code> block found in static analysis. But then the malware's own native capabilities never got a chance to run: the WinAPI resolver crashed on its very first call, and the failure cascaded through everything downstream of it &mdash; <code>CreateWindowEx</code>, <code>ShowWindow</code>, <code>DestroyWindow</code>, and almost certainly the memory-patch chain too, since it leans on the same resolver.</p>
+      <p>Two competing explanations, and I want to be honest that I didn't fully resolve which one was right: an honest bug &mdash; reflection-based P/Invoke via raw function pointers is fragile, and a 32-bit/64-bit pointer-size mismatch is a classic way to make it fall over &mdash; or an anti-sandbox side effect, where a fallback code path taken once the malware suspects it's being watched turns out to be the less-tested one. The errors looked like plain, uncaught .NET exceptions, which leans toward "bug" &mdash; a well-built evasion mechanism usually fails <em>silently</em>. But I wasn't ready to close the book on it, because&hellip;</p>
+
+      <h3>Run #2: VirusTotal's sandbox fills in the picture</h3>
+      <p>The mutex construction I'd worked out by hand matched <strong>exactly</strong>: <code>Global\explorer_wide_thumbcache</code>. Nice to have that confirmed byte-for-byte. But the real payoff was the highlighted API calls:</p>
+      <div class="code-block">
+        <div class="tag">virustotal &middot; behavior tab</div>
+        <pre><code>IsDebuggerPresent, GetTickCount, Sleep, GetAdaptersAddresses, GetSystemMetrics
+Window title check: "Administrator: c:/windows/.../powershell.exe"</code></pre>
+      </div>
+      <p>That's a full anti-analysis checklist: a debugger check, a timing check (sandboxes often hook <code>Sleep</code> and speed it up, which a <code>GetTickCount</code> comparison catches), a screen-resolution check (VMs often report suspiciously generic resolutions), a network-adapter enumeration (virtual NIC names are a giveaway), and &mdash; my favorite &mdash; a check for the literal string <code>"Administrator: "</code> in the console window title. Windows adds that prefix automatically whenever a process runs elevated, and a <em>lot</em> of automated sandboxes default to running everything as admin. A normal user mostly doesn't. Check the title, and you've got a cheap, effective sandbox fingerprint.</p>
+      <p>That finding retroactively made the Run #1 crash more interesting: it wasn't proof of anti-sandbox behavior, but it made the theory <em>more</em> plausible than it had been an hour earlier.</p>
+
+      <h3>Run #3: my own VM, and finally &mdash; it just works</h3>
+      <p>Third time, on my own local VirtualBox VM, network isolated to host-only, running under a non-elevated console. This run didn't crash.</p>
+      <div class="code-block">
+        <div class="tag">shell</div>
+        <pre><code>curl.exe 127.0.0.1:58172/       &rarr; {"error":"Unknown route","success":false}</code></pre>
+      </div>
+      <p>A real JSON API, responding exactly where the static base-URL calculation had said it would be. Small, satisfying confirmation. And it lined up with a pattern across all three runs so far:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Run</th><th>"Administrator:" in title?</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>My own VM (non-elevated)</td><td>No</td><td>&#9989; Ran cleanly, server responded</td></tr>
+            <tr><td>ANY.RUN (default sandbox user)</td><td>Yes</td><td>&#10060; Resolver crashed</td></tr>
+            <tr><td>API Monitor (forced elevation)</td><td>Yes</td><td>&#10060; Crashed again</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Three independent data points, same correlation each time. Not proof, but a pattern too clean to ignore.</p>
+
+      <h3>A brief, frustrating detour with API Monitor</h3>
+      <p>I wanted call-level visibility into the WinAPI resolver, so I reached for API Monitor. Two attempts, two failures &mdash; and neither one was the malware's fault. The first run used the wrong architecture build entirely (32-bit monitor against a 64-bit process). The second, correctly matched to 64-bit, still died &mdash; but this time inside the plain .NET/CLR bootstrap, <em>before</em> the obfuscated script even started executing. Manual API-hooking tools and managed .NET code apparently don't get along. Lesson filed away, tool retired for this sample.</p>
+
+      <h3>The breakthrough: letting the sandbox do the deobfuscation for me</h3>
+      <p>This is the part of the investigation I'd point to if someone asked "what actually cracked this open." ANY.RUN has a feature called <strong>Script Tracer</strong> that logs every single <code>.Replace()</code>, <code>.Substring()</code>, <code>.TrimEnd()</code> call the script makes at runtime, with real before/after values. It is, functionally, automated manual deobfuscation &mdash; the exact tedious work from the static-analysis section above, done instantly and completely by the sandbox instead of by hand.</p>
+      <p>It confirmed the mutex construction down to the character. And it settled, once and for all, the question that had been nagging since the very first grep:</p>
+      <div class="code-block">
+        <div class="tag">script tracer &middot; resolved calls</div>
+        <pre><code>MXVn2GqrFSCSZqSi8 kernel32.dll OpenProcess
+MXVn2GqrFSCSZqSi8 kernel32.dll ReadProcessMemory
+MXVn2GqrFSCSZqSi8 kernel32.dll WriteProcessMemory
+MXVn2GqrFSCSZqSi8 kernel32.dll VirtualProtectEx
+MXVn2GqrFSCSZqSi8 kernel32.dll CloseHandle</code></pre>
+      </div>
+      <p>Not "read or write" &mdash; <strong>both</strong>. Combined, that's a complete call chain:</p>
+      <div class="chaintrace">
+        <div class="step">OpenProcess         <span class="arrow">&rarr;</span> get a handle on the target process</div>
+        <div class="step">ReadProcessMemory   <span class="arrow">&rarr;</span> read its memory (e.g. locate a FindPattern target)</div>
+        <div class="step">WriteProcessMemory  <span class="arrow">&rarr;</span> write into its memory &mdash; an actual patch</div>
+        <div class="step">VirtualProtectEx    <span class="arrow">&rarr;</span> flip memory protection before writing</div>
+        <div class="step">CloseHandle         <span class="arrow">&rarr;</span> clean up</div>
+      </div>
+      <div class="breakthrough">
+        <span class="tag">Breakthrough</span>
+        <p>That's not passive reading and it's not just self-patching. That's a complete <strong>remote memory-patch primitive</strong> against a process addressed by PID &mdash; MITRE calls this Process Injection (T1055), and it's a meaningfully more dangerous capability than my early "probably just an AMSI bypass" read.</p>
+      </div>
+      <p>Two more small pieces clicked into place from the same trace: <code>GetWindowThreadProcessId</code>, which turns a window handle from <code>EnumWindows</code> into a process ID &mdash; a second, extension-independent way for the malware to find its target &mdash; and confirmation that <code>amsi.dll</code> is genuinely loaded in the process, which is the necessary precondition for an AMSI-bypass patch to even be possible in the first place.</p>
+    </section>
+
+    <section id="not-alone">
+      <h2>Not a loner</h2>
+      <p>With the file itself fully mapped, I pointed VirusTotal's Graph feature at the hash of the compiled C# helper's <em>source</em> (<code>.0.cs</code>) instead of the <code>.ps1</code> hash &mdash; deliberately, because the compiled DLL's hash is useless for correlation (every build gets a fresh MVID and PE timestamp from the compiler, so it never repeats even for byte-identical source). The source file hash, by contrast, is stable.</p>
+      <p>That one pivot opened up a lot:</p>
+      <ul>
+        <li><strong>20 "execution parents"</strong> &mdash; other samples that drop this exact same <code>.0.cs</code> source.</li>
+        <li>Some of those parents weren't named <code>onedrive-sync.ps1</code> at all &mdash; hash-named files, different bait entirely. Same building block, reused across campaigns. This isn't one attacker's custom tool; it's a shared <strong>builder/toolkit</strong>.</li>
+        <li>A timeline stretching from <strong>2026-04-18 to at least 2026-07-09</strong> &mdash; nearly three and a half months of continuous activity, not an isolated incident.</li>
+        <li>Detection rates climbing steadily over that window: April builds sat at 0&ndash;1 out of 62&ndash;63 engines; July builds were up to 8&ndash;26 out of 60&ndash;61. Textbook AV catch-up pattern against a continuously rebuilt tool.</li>
+        <li>A recurring, if generic, family label: <strong>Wacatac</strong>, plus a Fortinet signature (<code>PowerShell/Agent.EKY!tr</code>) that stayed identical across three separate builds &mdash; evidence Fortinet is catching a structural pattern, not a specific hash.</li>
+      </ul>
+      <div class="note">
+        <span class="tag">Calibration check</span>
+        <p>VT Graph also surfaced a possible delivery archive (<code>onedrive-sync.zip</code>) and a low-confidence C2 domain candidate. I'm deliberately not treating either as confirmed. The ZIP is a single data point that could just as easily be an analyst's own bundling as a real distribution artifact, and it doesn't match what actually happened to my friend (browser extensions, not a downloaded archive). The domain had exactly one vendor flag out of ninety-one. Graph relationships are leads, not facts &mdash; worth writing down, not worth overclaiming.</p>
+      </div>
+    </section>
+
+    <section id="verdict">
+      <h2>Putting it together</h2>
+      <div class="verdict-box">
+        <span class="tag">Verdict</span>
+        <p>Strip away the obfuscation layers and the sandbox drama, and here's what <code>onedrive-sync.ps1</code> actually is: a <strong>modular PowerShell trojan / local IPC agent</strong>. Not a downloader &mdash; no downloader cmdlets anywhere in the file, no outbound C2 traffic in three independent execution environments. It's the native backend half of a two-part toolkit.</p>
+        <p>Start to finish, it: disguises itself as a OneDrive helper and checks a disguised mutex to avoid running twice; actively checks for a debugger, a sandboxed environment, and elevated/admin context before doing anything risky; resolves every Win32 API it needs at runtime through raw function pointers, specifically to avoid leaving a static import table for scanners to catch; compiles a small native helper on the fly for window enumeration and memory-pattern scanning; runs a CORS-enabled local HTTP server as a bridge to a browser extension that was never recovered; and, once it has a target process ID, opens the process and both reads <em>and writes</em> its memory. A complete remote memory-patch capability, most plausibly aimed at patching <code>amsi.dll</code> in a browser process, confirmed loaded in the target.</p>
+      </div>
+      <p>My friend's actual, confirmed impact &mdash; Telegram access stolen straight through a valid, already-authenticated session, no password or 2FA needed &mdash; is exactly the outcome this architecture is built to produce.</p>
+      <p>And the VT Graph pivot means this isn't a one-off. It's one build in a toolkit that's been actively maintained and reused across different campaigns for months, with AV detection slowly catching up behind it the whole time.</p>
+    </section>
+
+    <section id="iocs">
+      <h2>The IOC list, short version</h2>
+      <p>Here's what's actually worth acting on.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Indicator</th><th>Why it's worth keeping</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">Mutex <code>Global\explorer_wide_thumbcache</code></td><td>Stable across every build &mdash; great for an IR sweep with Process Explorer/handle search</td></tr>
+            <tr><td class="mono">Local port <code>127.0.0.1:58172</code> (HTTP, CORS)</td><td>Unusual localhost listener, easy to catch with netstat/EDR</td></tr>
+            <tr><td class="mono">__PSScriptPolicyTest_*.ps1/.psm1</td><td>Followed by a <code>csc.exe</code> child of <code>powershell.exe -ep bypass</code> &mdash; behavioral, not hash-based</td></tr>
+            <tr><td class="mono">.0.cs source hash <code>154adea7&hellip;</code></td><td>Not the compiled DLL hash &mdash; that's worthless. The <em>source</em> hash is stable, 20 execution parents</td></tr>
+            <tr><td class="mono">Filename pattern <code>[a-z0-9]{8}\.0\.cs</code></td><td>Confirmed across 78+ historical variants on VT</td></tr>
+            <tr><td>File hash / filename <code>onedrive-sync.ps1</code></td><td>Low value &mdash; first-submission-of-the-day pattern strongly suggests per-victim builds</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="mitre">
+      <h2>MITRE ATT&amp;CK, condensed</h2>
+      <p><code>T1027</code> Obfuscated Files, <code>T1027.004</code> Compile After Delivery, <code>T1106</code> Native API (reflection-based resolution), <code>T1057</code> Process Discovery, <code>T1055</code> Process Injection, <code>T1497.001</code> Virtualization/Sandbox Evasion, <code>T1622</code> Debugger Evasion, <code>T1562</code> Impair Defenses &mdash; this last one because the file directly checks the registry for whether Script Block Logging, Module Logging, Transcription, and Protected Event Logging are turned on.</p>
+      <p>Worth sitting with for a second: it's checking for the exact mechanisms I used to catch it.</p>
+    </section>
+
+    <section id="lessons">
+      <h2>What I'd do differently next time</h2>
+      <p>A few habits this analysis earned the hard way:</p>
+      <ul>
+        <li><strong>An exact-string grep returning zero hits proves nothing</strong> against name-splitting obfuscation. Only positive matches are trustworthy; treat every "not found" as "not found <em>this way</em>."</li>
+        <li><strong><code>Get-WinEvent</code> needs a <code>ProcessId</code> filter.</strong> Script Block Logging is system-wide &mdash; without filtering, unrelated process events (I chased a false lead from Windows' own Program Compatibility Assistant) get mixed in with the sample's own.</li>
+        <li><strong>Compiled-DLL hashes from <code>Add-Type</code> are not stable IOCs.</strong> Every <code>csc.exe</code> run bakes in a fresh MVID and PE timestamp, even for byte-identical source. Hash the <em>source</em>, not the output.</li>
+        <li><strong>Manual API-hooking tools and managed .NET code don't mix well.</strong> If your hooking tool dies inside the CLR bootstrap before the target code even runs, that's the tool, not the malware.</li>
+        <li><strong>A sandbox's automated Script Tracer / behavior trace can out-perform hours of manual deobfuscation.</strong> Use it as a first pass, then go back to the static file to verify.</li>
+        <li><strong>Not every VT Graph edge is a fact.</strong> Execution parents and shared hashes are strong; "Collections" and multi-hop relationship chains are leads worth a footnote, not a citation.</li>
+      </ul>
+    </section>
+
+    <section id="recs">
+      <h2>Recommendations</h2>
+      <p>For my friend, the advice was blunt: treat the machine as fully compromised, not just infected. This sample can write into another process's memory &mdash; a targeted file cleanup isn't trustworthy against that capability class.</p>
+      <ul>
+        <li>Full OS reinstall &mdash; not just deleting the file.</li>
+        <li>Kill every active Telegram session from a clean device, then change the password.</li>
+        <li>Change every password that touched the affected browser, from a different device.</li>
+        <li>Pull the Chrome extensions list and remove anything sideloaded or unfamiliar.</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>The file that started this was 316&nbsp;KB of PowerShell someone built to look boring. It turned out to be half of a working credential-theft toolkit, active in the wild for months, with a real victim on the other end of it. That's usually how it goes &mdash; the interesting part is never the file name.</p>
+    <p>Real-world sample, real-world impact. Analysis conducted in an isolated VM across ANY.RUN, VirusTotal Sandbox, and a local VirtualBox environment. Written up 2026-08-14.</p>
+  </footer>
+
+  <footer class="site-footer">
+    <p><a href="/">&larr; Back to all posts</a></p>
+  </footer>
+
+</div>
+
+<script>
+  (function(){
+    var bar = document.getElementById('progress');
+    function update(){
+      var h = document.documentElement;
+      var scrolled = h.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrolled / height) * 100 : 0;
+      bar.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', update, {passive:true});
+    window.addEventListener('resize', update);
+    update();
+  })();
+</script>
+</body>
+</html>
