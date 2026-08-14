@@ -427,21 +427,32 @@ a:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--accent-hover);
 .cert-card .cert-issuer{color:var(--ink-muted); font-size:11px;}
 
 /* Contact */
-.contact-panel{
-  display:flex; flex-wrap:wrap; gap:14px; align-items:center;
-  padding:26px 28px; background:var(--surface); border:1px solid var(--border);
-  border-radius:12px; margin-bottom:16px; box-shadow:0 6px 20px var(--shadow);
+.contact-icons{display:flex; gap:14px; margin-bottom:22px;}
+.contact-icon{
+  display:flex; align-items:center; justify-content:center;
+  width:52px; height:52px; border-radius:12px;
+  background:var(--surface); color:var(--ink);
+  border:1px solid color-mix(in srgb, var(--accent-heading) 35%, var(--border));
+  box-shadow:0 4px 16px var(--shadow), 0 0 0 1px color-mix(in srgb, var(--accent-heading) 18%, transparent);
+  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease, color .15s ease;
 }
-.contact-link{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:10px 16px; border-radius:8px; border:1px solid var(--border);
-  color:var(--ink); text-decoration:none; font-size:14.5px; font-weight:600;
-  background:var(--bg);
+.contact-icon:hover, .contact-icon:focus-visible{
+  transform:translateY(-4px);
+  color:var(--accent-hover);
+  border-color:color-mix(in srgb, var(--accent-heading) 55%, var(--border));
+  box-shadow:0 10px 26px var(--shadow), 0 0 0 1px color-mix(in srgb, var(--accent-heading) 30%, transparent);
 }
-.contact-link:hover, .contact-link:focus-visible{color:var(--accent-hover); border-color:var(--accent-hover);}
-.contact-link.primary{
-  background:var(--accent-heading); border-color:var(--accent-heading); color:var(--bg); font-weight:700;
+.resume-btn{
+  display:inline-flex; align-items:center;
+  padding:13px 24px; border-radius:12px;
+  background:var(--accent-heading); color:var(--bg);
+  font-weight:700; font-size:15px; text-decoration:none;
+  border:1px solid var(--accent-heading);
+  box-shadow:0 4px 16px var(--shadow), 0 0 0 1px color-mix(in srgb, var(--accent-heading) 30%, transparent);
+  transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
 }
-.contact-link.primary:hover, .contact-link.primary:focus-visible{color:var(--bg); opacity:.9; border-color:var(--accent-heading);}
-.contact-note{color:var(--ink-muted); font-size:13.5px; margin:-8px 0 24px;}
+.resume-btn:hover, .resume-btn:focus-visible{
+  transform:translateY(-4px); opacity:.9;
+  box-shadow:0 10px 26px var(--shadow), 0 0 0 1px color-mix(in srgb, var(--accent-heading) 45%, transparent);
+}
 html{scroll-behavior:smooth;}
