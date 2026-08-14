@@ -434,8 +434,8 @@ a:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--accent-hover);
   display:flex; align-items:center; justify-content:center;
   width:52px; height:52px; border-radius:12px;
   background:var(--surface); color:var(--ink);
-  border:1px solid color-mix(in srgb, var(--accent-heading) 35%, var(--border));
-  box-shadow:0 4px 16px var(--shadow), 0 0 0 1px color-mix(in srgb, var(--accent-heading) 18%, transparent);
+  border:1px solid color-mix(in srgb, var(--accent-heading) 45%, var(--border));
+  box-shadow:0 4px 16px var(--shadow), 0 0 18px 2px color-mix(in srgb, var(--accent-heading) 35%, transparent);
   transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease, color .15s ease;
 }
 .contact-icon:hover, .contact-icon:focus-visible{
