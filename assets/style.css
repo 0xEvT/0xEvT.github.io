@@ -185,7 +185,7 @@ nav.toc a:hover, nav.toc a:focus-visible{border-bottom-color:var(--accent-hover)
 main section{margin-bottom:56px;}
 h2{
   font-family:ui-serif,"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
-  font-size:1.7rem; margin:0 0 20px; padding-top:14px; border-top:2px solid var(--accent-heading);
+  font-size:1.7rem; margin:0 0 20px;
   color:var(--accent-heading); text-wrap:balance;
 }
 h3{
