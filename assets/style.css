@@ -368,19 +368,25 @@ a:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--accent-hover);
 .skill-group .group-items{color:var(--ink); font-size:15px; line-height:1.5;}
 
 /* Experience */
+.job-list{display:flex; flex-direction:column; gap:20px; margin:0 0 24px;}
 .job-entry{
-  padding:22px 0; border-top:1px solid var(--border);
+  background:var(--surface);
+  border:1px solid color-mix(in srgb, var(--accent-heading) 35%, var(--border));
+  border-radius:12px; padding:24px 26px;
+  box-shadow:0 4px 16px var(--shadow);
+  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
-.job-list .job-entry:last-child{border-bottom:1px solid var(--border); margin-bottom:24px;}
-.job-entry .job-head{
-  display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 12px; margin-bottom:10px;
+.job-entry:hover{
+  transform:translateY(-3px);
+  border-color:color-mix(in srgb, var(--accent-heading) 50%, var(--border));
+  box-shadow:0 10px 28px var(--shadow);
 }
-.job-entry .job-title{font-weight:700; font-size:17px;}
-.job-entry .job-org{color:var(--accent-confirm); font-weight:600;}
-.job-entry .job-meta{
-  font-family:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
-  font-size:12.5px; color:var(--ink-muted); letter-spacing:.02em;
+.job-entry .job-title{font-weight:700; font-size:18px; display:block; margin-bottom:4px;}
+.job-entry .job-meta-line{
+  color:var(--ink-muted); font-size:13.5px; margin-bottom:14px;
 }
+.job-entry .job-meta-line .job-org{color:var(--accent-confirm); font-weight:600;}
+.job-entry .job-summary{color:var(--ink-muted); font-size:15px; margin:0 0 14px; max-width:78ch;}
 .job-entry ul{margin:0; padding-left:1.2em; max-width:74ch;}
 .job-entry li{color:var(--ink-muted); font-size:15px; margin-bottom:4px;}
 
