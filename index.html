@@ -3,42 +3,209 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>0xEvT — Security Research Notes</title>
-<meta name="description" content="DFIR case files, malware teardown notes, and offensive security learning logs.">
+<title>0xEvT — IT Security Specialist</title>
+<meta name="description" content="Portfolio — IT Security Specialist focused on SOC operations, malware analysis, and applied pentesting. Investigations, skills, experience, and certifications.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%A0%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
 
-<div class="wrap">
-
-  <header class="site-header">
+<div class="sticky-nav">
+  <header class="site-header wrap">
     <a class="brand" href="/">0x<span>EvT</span></a>
     <nav class="site-nav">
-      <a href="https://github.com/0xEvT" target="_blank" rel="noopener">GitHub</a>
+      <a href="#investigations">Investigations</a>
+      <a href="#skills">Skills</a>
+      <a href="#experience">Experience</a>
+      <a href="#education">Education</a>
+      <a href="#certs">Certs</a>
+      <a href="#contact">Contact</a>
     </nav>
   </header>
+</div>
 
-  <section class="intro">
+<div class="wrap">
+
+  <section class="hero">
     <p class="kicker">Field notes &middot; DFIR &amp; offensive security</p>
-    <h1>Real samples, real incidents, written up properly.</h1>
-    <p>Malware teardowns, case files, and notes from the security-analyst path &mdash; documented the way I wish more write-ups were: honest about the dead ends, not just the clean conclusion.</p>
+    <h1>IT Security Specialist — SOC Operations, Malware Analysis, and Applied Pentesting.</h1>
+    <p>Hands-on background across SOC/SIEM tuning, incident response, penetration-test reporting, and independent malware teardowns &mdash; documented the way I wish more write-ups were: honest about the dead ends, not just the clean conclusion.</p>
+    <p class="toolline">
+      <b>Offensive:</b> Kali Linux, Metasploit, Nmap, Burp Suite, Nessus, Wireshark
+      <span class="sep">&middot;</span>
+      <b>Blue Team:</b> Splunk, QRadar, FortiGate
+      <span class="sep">&middot;</span>
+      <b>Scripting:</b> Python, Bash, PowerShell
+    </p>
   </section>
 
-  <ul class="post-list">
-    <li>
-      <a class="post-card" href="/posts/anatomy-of-a-fake-onedrive-sync-script.html">
-        <span class="post-date">2026-08-14</span>
-        <h2>Anatomy of a Fake OneDrive Sync Script</h2>
+  <section id="investigations">
+    <h2>Investigations</h2>
+    <p class="section-lede">Real samples, real incidents — full write-ups of hands-on DFIR and malware-analysis work.</p>
+    <div class="investigation-grid">
+      <a class="investigation-card" href="/posts/anatomy-of-a-fake-onedrive-sync-script.html">
+        <h3>Anatomy of a Fake OneDrive Sync Script</h3>
         <p>How a 316&nbsp;KB file called <code>onedrive-sync.ps1</code> turned out to be half of a working credential-theft toolkit &mdash; and how a friend's stolen Telegram account led straight to it.</p>
         <div class="tags">
           <span class="tag">powershell</span>
           <span class="tag">malware-analysis</span>
           <span class="tag">dfir</span>
         </div>
+        <span class="cta">Read &rarr;</span>
       </a>
-    </li>
-  </ul>
+    </div>
+  </section>
+
+  <section id="skills">
+    <h2>Skills</h2>
+    <div class="skills-grid">
+      <div class="skill-group">
+        <div class="group-label">Offensive / Testing</div>
+        <div class="group-items">Kali Linux, Metasploit, Nmap, Burp Suite, Nessus, Wireshark</div>
+      </div>
+      <div class="skill-group">
+        <div class="group-label">Scripting</div>
+        <div class="group-items">Python, Bash, PowerShell</div>
+      </div>
+      <div class="skill-group">
+        <div class="group-label">SIEM / Blue Team</div>
+        <div class="group-items">Splunk, QRadar, FortiGate</div>
+      </div>
+      <div class="skill-group">
+        <div class="group-label">Frameworks &amp; Compliance</div>
+        <div class="group-items">ISO 27001, PCI DSS</div>
+      </div>
+      <div class="skill-group">
+        <div class="group-label">Network Security</div>
+        <div class="group-items">LAN/WAN/WLAN, Firewall, IDS/IPS, Vulnerability Scanners</div>
+      </div>
+      <div class="skill-group">
+        <div class="group-label">Virtualization</div>
+        <div class="group-items">VMware, VirtualBox</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="experience">
+    <h2>Experience</h2>
+    <div class="job-list">
+
+      <div class="job-entry">
+        <div class="job-head">
+          <span class="job-title">Cyber Security &amp; IT-Support</span>
+          <span class="job-org">GC Group GermanyCation</span>
+          <span class="job-meta">Dec 2022 – Dec 2025 &middot; Germany</span>
+        </div>
+        <ul>
+          <li>Monitored web and social-media activity for early detection of unusual behavior and potential threats</li>
+          <li>Handled security-relevant incidents within the CRM environment (Kommo CRM)</li>
+          <li>Developed preventive measures to maintain data security</li>
+        </ul>
+      </div>
+
+      <div class="job-entry">
+        <div class="job-head">
+          <span class="job-title">Cyber Security Engineer (Internship)</span>
+          <span class="job-org">techNS UG</span>
+          <span class="job-meta">May 2024 – Jun 2024 &middot; Oberursel, Germany</span>
+        </div>
+        <ul>
+          <li>Investigated security threats and performed vulnerability analysis</li>
+          <li>Tuned a SIEM system — built new correlation use cases and improved existing ones</li>
+          <li>Supported incident-response efforts and drafted pentest reports</li>
+        </ul>
+      </div>
+
+      <div class="job-entry">
+        <div class="job-head">
+          <span class="job-title">Security Consultant</span>
+          <span class="job-org">Ainprard sp. z o.o.</span>
+          <span class="job-meta">Jan 2018 – Jan 2021 &middot; Warsaw, Poland</span>
+        </div>
+        <ul>
+          <li>Ran client-facing security risk assessments</li>
+          <li>Supported recruitment of new security staff</li>
+          <li>Developed and rolled out security policies for campaigns (ISO 27000 fundamentals)</li>
+        </ul>
+      </div>
+
+      <div class="job-entry">
+        <div class="job-head">
+          <span class="job-title">Crypto Mining &amp; Engineering Specialist</span>
+          <span class="job-org">Paytomat (Fintech Startup)</span>
+          <span class="job-meta">Oct 2014 – Mar 2017 &middot; Kyiv, Ukraine</span>
+        </div>
+        <ul>
+          <li>Configured mining hardware/software and set up pool connections</li>
+          <li>Monitored deployments and ran multi-layer security analysis</li>
+          <li>Managed mining-rig performance, efficiency analysis, and operational security</li>
+        </ul>
+      </div>
+
+      <div class="job-entry">
+        <div class="job-head">
+          <span class="job-title">QA Tester (Freelance)</span>
+          <span class="job-org">utest.com</span>
+          <span class="job-meta">May 2016 – Aug 2016</span>
+        </div>
+        <ul>
+          <li>Tested websites and applications as part of distributed online QA teams</li>
+          <li>Verified financial-instrument transaction flows</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="education">
+    <h2>Education</h2>
+    <div class="edu-list">
+      <div class="edu-entry">
+        <div class="edu-title">IT-Cybersecurity Engineer</div>
+        <div class="edu-org">EuroTechStudy</div>
+        <div class="edu-meta">Jun 2023 – Jun 2024 &middot; Oberursel, Germany &middot; Grade: Sehr Gut (90/100)</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="certs">
+    <h2>Certifications</h2>
+    <div class="cert-grid">
+      <div class="cert-group">
+        <div class="group-label">CompTIA</div>
+        <ul>
+          <li class="cert-item"><span class="cert-name">Security+</span><span class="cert-exp">exp. 06/2028</span></li>
+          <li class="cert-item"><span class="cert-name">CySA+ &amp; Splunk Core Certified User</span><span class="cert-exp">exp. 05/2028</span></li>
+          <li class="cert-item"><span class="cert-name">Network+</span><span class="cert-exp">exp. 06/2028</span></li>
+          <li class="cert-item"><span class="cert-name">Linux+</span><span class="cert-exp">exp. 08/2027</span></li>
+          <li class="cert-item"><span class="cert-name">Network Security Professional (CNSP)</span><span class="cert-exp">2025</span></li>
+        </ul>
+      </div>
+      <div class="cert-group">
+        <div class="group-label">TÜV Rheinland</div>
+        <ul>
+          <li class="cert-item"><span class="cert-name">Information Security Officer</span><span class="cert-exp">exp. 06/2027</span></li>
+        </ul>
+        <div class="group-label" style="margin-top:16px;">Cisco Networking Academy</div>
+        <ul>
+          <li class="cert-item"><span class="cert-name">Cybersecurity Essentials</span></li>
+          <li class="cert-item"><span class="cert-name">Ethical Hacker</span></li>
+          <li class="cert-item"><span class="cert-name">Introduction to Cybersecurity</span></li>
+          <li class="cert-item"><span class="cert-name">Networking Basics</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <h2>Contact</h2>
+    <p class="contact-note">HackTheBox / TryHackMe profiles — coming soon.</p>
+    <div class="contact-panel">
+      <a class="contact-link" href="https://github.com/0xEvT" target="_blank" rel="noopener">GitHub</a>
+      <a class="contact-link" href="mailto:it-sec@office-dateien.de">it-sec@office-dateien.de</a>
+      <a class="contact-link primary" href="/assets/0xEvT-resume.pdf" target="_blank" rel="noopener">Download Resume</a>
+    </div>
+  </section>
 
   <footer class="site-footer">
     <p>&copy; 2026 0xEvT. Built with plain HTML, hosted on GitHub Pages.</p>
